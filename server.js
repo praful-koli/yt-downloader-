@@ -120,11 +120,9 @@ app.post("/upload-cookies", (req, res) => {
     }
 
     if (!cookieText || !cookieText.includes("youtube.com")) {
-      return res
-        .status(400)
-        .json({
-          error: "Invalid cookie file — must contain youtube.com cookies",
-        });
+      return res.status(400).json({
+        error: "Invalid cookie file — must contain youtube.com cookies",
+      });
     }
 
     fs.writeFileSync(COOKIE_FILE, cookieText, "utf8");
@@ -179,6 +177,18 @@ app.post("/download", (req, res) => {
   const args = [ytdlp, fmt];
 
   if (IS_CLOUD) {
+    // On Render, use Android player client — bypasses JS n-challenge completely
+    // This uses YouTube's mobile API which doesn't require JavaScript solving
+    args.push('--extractor-args "youtube:player_client=android,web"');
+
+    // Also try node.js runtime if available
+    try {
+      const nodePath = execSync("which node", { encoding: "utf8" }).trim();
+      if (nodePath) args.push(`--js-runtimes "node:${nodePath}"`);
+    } catch {}
+  }
+
+  if (IS_CLOUD) {
     // On Render — use uploaded cookies file
     if (fs.existsSync(COOKIE_FILE)) {
       args.push(`--cookies "${COOKIE_FILE}"`);
@@ -190,6 +200,11 @@ app.post("/download", (req, res) => {
     if (browser && browser !== "")
       args.push(`--cookies-from-browser ${browser}`);
   }
+
+  // Use android client as fallback — works better without JS runtime
+  // Also set extractor retries
+  args.push("--extractor-retries 3");
+  args.push("--retry-sleep 2");
 
   if (subtitles) args.push("--write-subs --embed-subs");
   if (!playlist) args.push("--no-playlist");
