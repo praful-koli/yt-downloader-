@@ -5,12 +5,12 @@ services:
     plan: free
     buildCommand: >
       npm install &&
-      pip install -U "yt-dlp[default]" &&
-      pip install -U yt-dlp-ejs &&
-      yt-dlp --version &&
+      pip install -U "yt-dlp[default]" yt-dlp-ejs &&
+      echo "=== Versions ===" &&
       node --version &&
-      echo "yt-dlp-ejs installed:" && python3 -c "import yt_dlp_ejs; print('OK')" 2>/dev/null || echo "yt-dlp-ejs check done" &&
-      echo "Build complete!"
+      yt-dlp --version &&
+      python3 -c "import yt_dlp_ejs; print('yt-dlp-ejs OK')" &&
+      echo "=== Build complete ==="
     startCommand: node server.js
     envVars:
       - key: RENDER
