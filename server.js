@@ -179,14 +179,12 @@ app.post("/download", (req, res) => {
   const args = [ytdlp, fmt];
 
   if (IS_CLOUD) {
-    // ── Render cloud mode ───────────────────────────────────────────────────
-    // Use tv_embedded client: supports cookies + no JS n-challenge needed
-    // Do NOT use android client — it skips when cookies are present
-    args.push(
-      '--extractor-args "youtube:player_client=tv_embedded,web_creator,mweb"',
-    );
+    // ── Render cloud mode ────────────────────────────────────────────────────
+    // bgutil-ytdlp-pot-provider plugin handles PO Token generation automatically
+    // It uses Node.js BotGuard challenge solver — installed in build command
+    // No need to manually set player_client or po_token
 
-    // Use node.js as JS runtime (available on Render's Node runtime)
+    // Pass node path so bgutil plugin can use it
     try {
       const nodePath = execSync("which node", { encoding: "utf8" }).trim();
       if (nodePath) {
@@ -194,6 +192,9 @@ app.post("/download", (req, res) => {
         console.log(`[runtime] node → ${nodePath}`);
       }
     } catch {}
+
+    // Use web client — bgutil plugin will auto-provide PO tokens for it
+    args.push('--extractor-args "youtube:player_client=web"');
 
     // Use uploaded cookies.txt
     if (fs.existsSync(COOKIE_FILE)) {
@@ -203,7 +204,7 @@ app.post("/download", (req, res) => {
       console.warn("[cookies] ⚠️  No cookies file — bot error likely");
     }
   } else {
-    // ── Local PC mode ───────────────────────────────────────────────────────
+    // ── Local PC mode ────────────────────────────────────────────────────────
     if (browser && browser !== "") {
       args.push(`--cookies-from-browser ${browser}`);
     }

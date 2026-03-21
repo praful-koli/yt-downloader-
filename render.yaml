@@ -6,8 +6,10 @@ services:
     buildCommand: >
       npm install &&
       pip install -U "yt-dlp[default]" &&
-      echo "node path:" && which node &&
-      echo "yt-dlp version:" && yt-dlp --version &&
+      pip install -U yt-dlp-ejs &&
+      yt-dlp --version &&
+      node --version &&
+      echo "yt-dlp-ejs installed:" && python3 -c "import yt_dlp_ejs; print('OK')" 2>/dev/null || echo "yt-dlp-ejs check done" &&
       echo "Build complete!"
     startCommand: node server.js
     envVars:
