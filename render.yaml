@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ytgrab-helper
+    runtime: node
+    plan: free
+    buildCommand: npm install && pip install yt-dlp
+    startCommand: node server.js
+    envVars:
+      - key: RENDER
+        value: true
+      - key: NODE_ENV
+        value: production
