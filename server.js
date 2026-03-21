@@ -120,9 +120,11 @@ app.post("/upload-cookies", (req, res) => {
     }
 
     if (!cookieText || !cookieText.includes("youtube.com")) {
-      return res.status(400).json({
-        error: "Invalid cookie file — must contain youtube.com cookies",
-      });
+      return res
+        .status(400)
+        .json({
+          error: "Invalid cookie file — must contain youtube.com cookies",
+        });
     }
 
     fs.writeFileSync(COOKIE_FILE, cookieText, "utf8");
@@ -177,32 +179,36 @@ app.post("/download", (req, res) => {
   const args = [ytdlp, fmt];
 
   if (IS_CLOUD) {
-    // On Render, use Android player client — bypasses JS n-challenge completely
-    // This uses YouTube's mobile API which doesn't require JavaScript solving
-    args.push('--extractor-args "youtube:player_client=android,web"');
+    // ── Render cloud mode ───────────────────────────────────────────────────
+    // Use tv_embedded client: supports cookies + no JS n-challenge needed
+    // Do NOT use android client — it skips when cookies are present
+    args.push(
+      '--extractor-args "youtube:player_client=tv_embedded,web_creator,mweb"',
+    );
 
-    // Also try node.js runtime if available
+    // Use node.js as JS runtime (available on Render's Node runtime)
     try {
       const nodePath = execSync("which node", { encoding: "utf8" }).trim();
-      if (nodePath) args.push(`--js-runtimes "node:${nodePath}"`);
+      if (nodePath) {
+        args.push(`--js-runtimes "node:${nodePath}"`);
+        console.log(`[runtime] node → ${nodePath}`);
+      }
     } catch {}
-  }
 
-  if (IS_CLOUD) {
-    // On Render — use uploaded cookies file
+    // Use uploaded cookies.txt
     if (fs.existsSync(COOKIE_FILE)) {
       args.push(`--cookies "${COOKIE_FILE}"`);
+      console.log(`[cookies] ✅ Using ${COOKIE_FILE}`);
     } else {
-      console.warn("[warn] No cookies file — YouTube may block this");
+      console.warn("[cookies] ⚠️  No cookies file — bot error likely");
     }
   } else {
-    // Local — use browser cookies
-    if (browser && browser !== "")
+    // ── Local PC mode ───────────────────────────────────────────────────────
+    if (browser && browser !== "") {
       args.push(`--cookies-from-browser ${browser}`);
+    }
   }
 
-  // Use android client as fallback — works better without JS runtime
-  // Also set extractor retries
   args.push("--extractor-retries 3");
   args.push("--retry-sleep 2");
 
