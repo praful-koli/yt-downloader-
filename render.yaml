@@ -3,15 +3,8 @@ services:
     name: ytgrab-web
     runtime: node
     plan: free
-    buildCommand: >
-      npm install &&
-      pip install -U "yt-dlp[default]" yt-dlp-ejs &&
-      npm run build &&
-      node --version && yt-dlp --version &&
-      echo "Build complete!"
+    buildCommand: npm install && npm run build
     startCommand: node server.js
     envVars:
-      - key: RENDER
-        value: "true"
       - key: NODE_ENV
         value: production
