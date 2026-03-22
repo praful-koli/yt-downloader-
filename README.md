@@ -1,46 +1,16 @@
-# YTGrab Helper — Deploy to Render
+# React + Vite
 
-## How it works on Render
-1. Extension sends download request to Render server
-2. Render runs yt-dlp and downloads the video to /tmp
-3. When done, browser opens the /file endpoint
-4. Render streams the file → your browser saves it to your PC Downloads folder
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Deploy to Render (Step by Step)
+Currently, two official plugins are available:
 
-### Step 1 — Push to GitHub
-```bash
-git init
-git add .
-git commit -m "ytgrab helper"
-# Create repo on github.com then:
-git remote add origin https://github.com/YOUR_NAME/ytgrab-helper.git
-git push -u origin main
-```
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-### Step 2 — Deploy on Render
-1. Go to https://render.com → Sign up free
-2. Click New + → Web Service
-3. Connect your GitHub repo
-4. Fill in these settings:
-   - Name: ytgrab-helper
-   - Runtime: Node
-   - Build Command: npm install && pip install yt-dlp
-   - Start Command: node server.js
-   - Instance Type: Free
-5. Click Create Web Service
-6. Wait 2-3 minutes
-7. Your URL will be: https://ytgrab-helper.onrender.com
+## React Compiler
 
-### Step 3 — Update the Extension
-Open popup.js and set your Render URL:
-```js
-const HELPER_RENDER = 'https://ytgrab-helper.onrender.com'
-```
-Then reload the extension in chrome://extensions
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Notes
-- Free Render tier sleeps after 15 min of inactivity
-- First request after sleep takes ~30 seconds to wake up
-- Files are stored in /tmp and auto-deleted after 10 minutes
-- No persistent storage needed — files stream directly to your browser
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.

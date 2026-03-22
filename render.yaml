@@ -1,16 +1,14 @@
 services:
   - type: web
-    name: ytgrab-helper
+    name: ytgrab-web
     runtime: node
     plan: free
     buildCommand: >
       npm install &&
       pip install -U "yt-dlp[default]" yt-dlp-ejs &&
-      echo "=== Versions ===" &&
-      node --version &&
-      yt-dlp --version &&
-      python3 -c "import yt_dlp_ejs; print('yt-dlp-ejs OK')" &&
-      echo "=== Build complete ==="
+      npm run build &&
+      node --version && yt-dlp --version &&
+      echo "Build complete!"
     startCommand: node server.js
     envVars:
       - key: RENDER
