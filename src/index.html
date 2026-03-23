@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>YTGrab — YouTube Downloader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#ff0000;--red2:#cc0000;
+  --bg:#080809;--s1:#0f0f11;--s2:#161619;--s3:#1e1e22;
+  --b1:#1f1f25;--b2:#2a2a32;
+  --tx:#f0f0f4;--tx2:#888899;--tx3:#404050;
+  --gr:#4ade80;--or:#fb923c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:'Syne',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--s1)}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Layout */
+nav{position:fixed;top:0;left:0;right:0;z-index:99;background:rgba(8,8,9,.93);backdrop-filter:blur(20px);border-bottom:1px solid var(--b1)}
+.nav-in{max-width:860px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:28px;height:28px;background:var(--red);border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(255,0,0,.4);flex-shrink:0}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:2px}
+.logo-text span{color:var(--red)}
+.status-pill{display:flex;align-items:center;gap:7px;padding:4px 13px;border-radius:50px;font-size:10px;font-family:'JetBrains Mono',monospace;letter-spacing:.5px;border:1px solid;transition:all .3s}
+.status-pill.ok{color:var(--gr);border-color:rgba(74,222,128,.25);background:rgba(74,222,128,.06)}
+.status-pill.err{color:var(--or);border-color:rgba(251,146,60,.25);background:rgba(251,146,60,.06)}
+.status-pill.loading{color:var(--tx3);border-color:var(--b1);background:var(--s2)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.dot.pulse{animation:pulse 1.8s infinite}
+
+main{max-width:860px;margin:0 auto;padding:0 24px 80px;position:relative;z-index:1}
+
+/* BG decoration */
+.bg-blob{position:fixed;top:-250px;left:50%;transform:translateX(-50%);width:900px;height:700px;background:radial-gradient(ellipse,rgba(255,0,0,.07) 0%,transparent 65%);filter:blur(80px);pointer-events:none;z-index:0}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+
+/* Hero */
+.hero{text-align:center;padding:80px 0 48px}
+.tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--red);letter-spacing:3px;margin-bottom:20px;background:rgba(255,0,0,.07);border:1px solid rgba(255,0,0,.15);padding:4px 14px;border-radius:50px;animation:fadeUp .4s ease both}
+h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(52px,9vw,86px);line-height:.94;letter-spacing:2px;margin-bottom:18px;animation:fadeUp .5s .05s ease both}
+h1 span{color:var(--red)}
+.sub{font-size:14px;color:var(--tx2);line-height:1.7;animation:fadeUp .5s .1s ease both}
+
+/* URL box */
+.url-box{display:flex;align-items:center;gap:10px;background:var(--s1);border:2px solid var(--b2);border-radius:16px;padding:8px 8px 8px 20px;margin:36px 0 0;transition:border-color .2s,box-shadow .2s;animation:fadeUp .5s .15s ease both}
+.url-box:focus-within{border-color:var(--red);box-shadow:0 0 0 3px rgba(255,0,0,.1),0 12px 48px rgba(0,0,0,.5)}
+.url-box input{flex:1;background:none;border:none;outline:none;color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:13px}
+.url-box input::placeholder{color:var(--tx3)}
+#dlBtn{background:var(--red);color:#fff;border:none;border-radius:11px;padding:14px 28px;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:8px;flex-shrink:0}
+#dlBtn:hover:not(:disabled){background:var(--red2);box-shadow:0 6px 28px rgba(255,0,0,.4);transform:translateY(-1px)}
+#dlBtn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Options */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:20px;animation:fadeUp .5s .2s ease both}
+.opt-group label{display:block;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tx3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px}
+.opt-group select{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;cursor:pointer;transition:border-color .2s}
+.opt-group select:focus{border-color:var(--red)}
+
+/* Cookies panel */
+.cookies-panel{margin-top:20px;border:1px solid var(--b2);border-radius:12px;overflow:hidden;animation:fadeUp .5s .25s ease both}
+.cookies-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--s1);cursor:pointer;gap:12px}
+.cookies-hdr:hover{background:var(--s2)}
+.cookies-title{font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px}
+.cookies-arrow{font-size:12px;color:var(--tx3);transition:transform .2s;flex-shrink:0}
+.cookies-body{display:none;padding:16px 18px;background:var(--s2);border-top:1px solid var(--b1)}
+.cookies-body.open{display:block}
+.cookies-desc{font-size:12px;color:var(--tx2);line-height:1.7;margin-bottom:12px}
+.cookies-desc a{color:var(--red);text-decoration:none}
+.upload-row{display:flex;align-items:center;gap:10px}
+.upload-btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;cursor:pointer;flex-shrink:0;transition:background .2s}
+.upload-btn:hover{background:var(--red2)}
+.upload-btn.ok{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);color:var(--gr)}
+#cookieStatus{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--tx2)}
+
+/* Progress */
+#progressBox{margin-top:24px;background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:24px;display:none;position:relative;overflow:hidden}
+#progressBox::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:.5}
+.prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.prog-label{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)}
+.prog-pct{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--red);transition:color .3s}
+.prog-pct.done{color:var(--gr)}
+.prog-track{background:var(--s3);border-radius:50px;height:6px;overflow:hidden;margin-bottom:10px}
+.prog-fill{height:100%;border-radius:50px;width:0%;transition:width .4s ease;background:linear-gradient(90deg,var(--red),#ff6b6b);box-shadow:0 0 8px rgba(255,0,0,.5)}
+.prog-fill.done{background:linear-gradient(90deg,var(--gr),#86efac);box-shadow:0 0 8px rgba(74,222,128,.6)}
+.prog-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-bottom:14px}
+#logBox{background:#050506;border:1px solid var(--b1);border-radius:10px;padding:10px 14px;max-height:120px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);line-height:1.7;word-break:break-all}
+
+/* Success */
+#successBox{display:none;margin-top:16px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.25);border-radius:14px;padding:20px 24px;animation:fadeUp .4s ease}
+.success-row{display:flex;align-items:center;gap:16px}
+.success-icon{font-size:32px;flex-shrink:0}
+.success-info{flex:1;min-width:0}
+.success-title{font-size:15px;font-weight:700;color:var(--gr);margin-bottom:5px}
+.success-file{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:3px}
+.success-sub{font-size:11px;color:var(--tx2)}
+#saveBtn{background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);color:var(--gr);border-radius:9px;padding:10px 18px;font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-weight:700;transition:background .2s}
+#saveBtn:hover{background:rgba(74,222,128,.2)}
+
+/* Error */
+#errorBox{display:none;margin-top:16px;background:rgba(255,0,0,.06);border:1px solid rgba(255,0,0,.25);border-radius:12px;padding:16px 20px;font-size:12px;color:#ff8888;font-family:'JetBrains Mono',monospace;line-height:1.6;animation:fadeUp .3s ease}
+
+/* Spinner */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+
+@media(max-width:600px){
+  h1{font-size:52px}
+  .url-box{flex-direction:column;align-items:stretch}
+  #dlBtn{justify-content:center}
+  .opts{grid-template-columns:1fr 1fr}
+  .success-row{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-blob"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-in">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="white" width="15" height="15">
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-2.75 12.64 12.64 0 00-7.64 0A4.83 4.83 0 014.41 6.69 28 28 0 003 12a28 28 0 001.41 5.31 4.83 4.83 0 003.77 2.75 12.64 12.64 0 007.64 0 4.83 4.83 0 003.77-2.75A28 28 0 0021 12a28 28 0 00-1.41-5.31zM10 15V9l5 3z"/>
+        </svg>
+      </div>
+      <span class="logo-text">YT<span>GRAB</span></span>
+    </div>
+    <div class="status-pill loading" id="statusPill">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">Checking...</span>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="tag">⚡ YOUTUBE DOWNLOADER</div>
+    <h1>Download Any<br><span>YouTube Video</span></h1>
+    <p class="sub">4K · 1080p · 720p · MP3 · No ads · No signup<br>Paste URL → Click Download → File saves to your PC</p>
+
+    <!-- URL INPUT -->
+    <div class="url-box">
+      <input id="urlInput" type="text" placeholder="Paste YouTube URL here... (e.g. https://youtube.com/watch?v=...)"/>
+      <button id="dlBtn" onclick="startDownload()">
+        <span>↓</span> DOWNLOAD
+      </button>
+    </div>
+
+    <!-- OPTIONS -->
+    <div class="opts">
+      <div class="opt-group">
+        <label>Format</label>
+        <select id="format">
+          <option value="mp4">MP4 — Video + Audio</option>
+          <option value="mp3">MP3 — Audio Only</option>
+          <option value="webm">WebM — Video + Audio</option>
+        </select>
+      </div>
+      <div class="opt-group">
+        <label>Quality</label>
+        <select id="quality">
+          <option value="4k">4K (2160p)</option>
+          <option value="1080p">1080p Full HD</option>
+          <option value="720p" selected>720p HD</option>
+          <option value="480p">480p SD</option>
+          <option value="360p">360p</option>
+          <option value="240p">240p</option>
+          <option value="144p">144p</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- COOKIES PANEL -->
+    <div class="cookies-panel">
+      <div class="cookies-hdr" onclick="toggleCookies()">
+        <div class="cookies-title">
+          <span id="cookieIcon">🍪</span>
+          <span id="cookieHdrText">YouTube Cookies — Upload to fix bot errors</span>
+        </div>
+        <span class="cookies-arrow" id="cookieArrow">▼</span>
+      </div>
+      <div class="cookies-body" id="cookieBody">
+        <p class="cookies-desc">
+          If you get a "Sign in to confirm you're not a bot" error, upload your YouTube cookies.<br>
+          <strong>How:</strong> Install <a href="https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank">"Get cookies.txt LOCALLY"</a> Chrome extension → go to youtube.com → click the extension → Export → upload the file below.
+        </p>
+        <div class="upload-row">
+          <label>
+            <input type="file" id="cookieFile" accept=".txt" style="display:none" onchange="uploadCookies(this)"/>
+            <div class="upload-btn" id="cookieUploadBtn" onclick="document.getElementById('cookieFile').click()">
+              📄 Choose cookies.txt
+            </div>
+          </label>
+          <span id="cookieStatus">No file uploaded</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div id="progressBox">
+      <div class="prog-top">
+        <span class="prog-label" id="progLabel">Starting...</span>
+        <span class="prog-pct" id="progPct">0%</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-fill" id="progFill"></div>
+      </div>
+      <div class="prog-meta">
+        <span id="progSpeed"></span>
+        <span id="progEta"></span>
+      </div>
+      <div id="logBox"></div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="successBox">
+      <div class="success-row">
+        <span class="success-icon">💾</span>
+        <div class="success-info">
+          <div class="success-title">Download complete!</div>
+          <div class="success-file" id="successFile"></div>
+          <div class="success-sub">Your browser Save dialog appeared — choose where to save on your PC</div>
+        </div>
+        <button id="saveBtn" onclick="saveAgain()">↓ Save Again</button>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div id="errorBox" id="errorBox"></div>
+  </div>
+</main>
+
+<script>
+// State
+let pollTimer   = null
+let currentJob  = null
+let currentUrl  = null
+
+// ── Check server status ───────────────────────────────────────────────────────
+async function checkStatus() {
+  try {
+    const d = await fetch('/api/status').then(r => r.json())
+    const pill = document.getElementById('statusPill')
+    const dot  = document.getElementById('statusDot')
+    const txt  = document.getElementById('statusText')
+    pill.className = 'status-pill ok'
+    dot.className  = 'dot pulse'
+    txt.textContent = 'SERVER ONLINE'
+    if (d.hasCookies) {
+      document.getElementById('cookieIcon').textContent    = '✅'
+      document.getElementById('cookieHdrText').textContent = 'YouTube Cookies — Loaded!'
+      document.getElementById('cookieUploadBtn').className = 'upload-btn ok'
+      document.getElementById('cookieUploadBtn').textContent = '🔄 Update Cookies'
+      document.getElementById('cookieStatus').textContent  = '✅ Cookies active'
+    }
+  } catch {
+    const pill = document.getElementById('statusPill')
+    pill.className = 'status-pill err'
+    document.getElementById('statusDot').className  = 'dot'
+    document.getElementById('statusText').textContent = 'SERVER OFFLINE'
+  }
+}
+checkStatus()
+
+// ── Cookie toggle ─────────────────────────────────────────────────────────────
+function toggleCookies() {
+  const body  = document.getElementById('cookieBody')
+  const arrow = document.getElementById('cookieArrow')
+  const open  = body.classList.toggle('open')
+  arrow.style.transform = open ? 'rotate(180deg)' : ''
+}
+
+// ── Upload cookies ────────────────────────────────────────────────────────────
+async function uploadCookies(input) {
+  const file = input.files[0]
+  if (!file) return
+  const status = document.getElementById('cookieStatus')
+  status.textContent = '⏳ Uploading...'
+  try {
+    const text = await file.text()
+    if (!text || text.trim().length < 10) {
+      status.textContent = '❌ File appears empty'
+      return
+    }
+    const r = await fetch('/api/cookies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      body: text
+    })
+    // Safe JSON parse — avoids "Unexpected end of JSON" crash
+    let d
+    const raw = await r.text()
+    try { d = JSON.parse(raw) }
+    catch { d = { ok: false, error: 'Server returned: ' + raw.slice(0, 100) } }
+
+    if (d.ok) {
+      status.textContent = '✅ Saved! (' + d.count + ' cookie entries)'
+      document.getElementById('cookieIcon').textContent    = '✅'
+      document.getElementById('cookieHdrText').textContent = 'YouTube Cookies — Loaded!'
+      document.getElementById('cookieUploadBtn').className  = 'upload-btn ok'
+      document.getElementById('cookieUploadBtn').textContent = '🔄 Update Cookies'
+    } else {
+      status.textContent = '❌ ' + (d.error || 'Upload failed')
+    }
+  } catch (e) {
+    status.textContent = '❌ ' + e.message
+  }
+}
+
+// ── Start download ────────────────────────────────────────────────────────────
+async function startDownload() {
+  const url     = document.getElementById('urlInput').value.trim()
+  const format  = document.getElementById('format').value
+  const quality = document.getElementById('quality').value
+
+  if (!url) {
+    shake(document.querySelector('.url-box'))
+    return
+  }
+
+  currentUrl = url
+  clearInterval(pollTimer)
+
+  // Reset UI
+  show('progressBox')
+  hide('successBox')
+  hide('errorBox')
+  setProgress(0, false)
+  setLabel('Starting...')
+  document.getElementById('logBox').textContent = ''
+  document.getElementById('progSpeed').textContent = ''
+  document.getElementById('progEta').textContent   = ''
+
+  // Disable button
+  const btn = document.getElementById('dlBtn')
+  btn.disabled = true
+  btn.innerHTML = '<span class="spin"></span> DOWNLOADING...'
+
+  try {
+    const r = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, format, quality })
+    })
+    const d = await r.json()
+    if (!r.ok) throw new Error(d.error || 'Server error')
+
+    currentJob = d.id
+    pollTimer  = setInterval(pollProgress, 700)
+
+  } catch (e) {
+    showError(e.message)
+    resetBtn()
+  }
+}
+
+// ── Poll progress ─────────────────────────────────────────────────────────────
+async function pollProgress() {
+  if (!currentJob) return
+  try {
+    const d = await fetch(`/api/progress/${currentJob}`).then(r => r.json())
+
+    setProgress(d.progress || 0, d.status === 'done')
+    document.getElementById('progSpeed').textContent = d.speed ? `⚡ ${d.speed}` : ''
+    document.getElementById('progEta').textContent   = d.eta   ? `⏱ ETA: ${d.eta}` : ''
+
+    const label =
+      d.status === 'done'   ? '✅ Complete!' :
+      d.status === 'error'  ? '❌ Failed'    :
+      d.progress < 10       ? 'Starting...' :
+      d.progress < 50       ? 'Downloading...' :
+      d.progress < 90       ? 'Almost done...' : 'Finishing...'
+    setLabel(label)
+
+    if (d.error) appendLog(d.error)
+
+    if (d.status === 'done') {
+      clearInterval(pollTimer)
+      setProgress(100, true)
+      resetBtn()
+      if (d.fileUrl) {
+        // Trigger browser Save As dialog
+        triggerSave(d.fileUrl, d.filename)
+        showSuccess(d.filename, d.fileUrl)
+      }
+
+    } else if (d.status === 'error') {
+      clearInterval(pollTimer)
+      resetBtn()
+      showError(d.error || 'Download failed. Try uploading YouTube cookies.')
+    }
+  } catch {}
+}
+
+// ── Trigger browser Save As dialog ───────────────────────────────────────────
+let lastFileUrl  = null
+let lastFilename = null
+
+function triggerSave(url, filename) {
+  lastFileUrl  = url
+  lastFilename = filename
+  const a = document.createElement('a')
+  a.href     = url
+  a.download = filename || 'video'
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => document.body.removeChild(a), 200)
+}
+
+function saveAgain() {
+  if (lastFileUrl) triggerSave(lastFileUrl, lastFilename)
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function setProgress(pct, done) {
+  const fill = document.getElementById('progFill')
+  const num  = document.getElementById('progPct')
+  fill.style.width = pct + '%'
+  fill.className   = 'prog-fill' + (done ? ' done' : '')
+  num.textContent  = Math.floor(pct) + '%'
+  num.className    = 'prog-pct'  + (done ? ' done' : '')
+}
+
+function setLabel(t) {
+  document.getElementById('progLabel').textContent = t
+}
+
+function appendLog(text) {
+  const box = document.getElementById('logBox')
+  box.textContent += text + '\n'
+  box.scrollTop    = box.scrollHeight
+}
+
+function showSuccess(filename, fileUrl) {
+  document.getElementById('successFile').textContent = filename || 'video'
+  show('successBox')
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox')
+  box.textContent = '❌ ' + msg
+  show('errorBox')
+}
+
+function resetBtn() {
+  const btn = document.getElementById('dlBtn')
+  btn.disabled = false
+  btn.innerHTML = '<span>↓</span> DOWNLOAD'
+}
+
+function show(id) { document.getElementById(id).style.display = 'block' }
+function hide(id) { document.getElementById(id).style.display = 'none'  }
+
+function shake(el) {
+  el.style.animation = 'none'
+  el.offsetHeight
+  el.style.animation = 'shake .3s ease'
+  setTimeout(() => el.style.animation = '', 400)
+}
+
+// Enter key
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startDownload()
+})
+</script>
+</body>
+</html>

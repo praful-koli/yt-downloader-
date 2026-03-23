@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: ytgrab-web
+    name: ytgrab
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: npm install && pip install -U yt-dlp && node build.js
     startCommand: node server.js
     envVars:
       - key: NODE_ENV

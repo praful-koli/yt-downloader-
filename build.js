@@ -1,0 +1,6 @@
+const fs = require('fs')
+const path = require('path')
+const dir = path.join(__dirname, 'public')
+if (!fs.existsSync(dir)) fs.mkdirSync(dir)
+fs.copyFileSync(path.join(__dirname, 'src', 'index.html'), path.join(dir, 'index.html'))
+console.log('Build done!')
